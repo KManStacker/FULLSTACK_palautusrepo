@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import personService from './services/persons'
+import Notification from './components/Notification'
+import Error from './components/Error'
+import './index.css'
 
 const Filter = ({newFilter, handleFilterChange}) =>
   <div>
@@ -34,13 +37,13 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [newFilter, setNewFilter] = useState('')
+  const [notificationMessage, setNotificationMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
-    console.log('effect')
     personService
       .getAll()
       .then((initialPersons) => {
-        console.log('promise fulfilled')
         setPersons(initialPersons)
       })
   }, [])
@@ -63,8 +66,23 @@ const App = () => {
           .update(oldPerson.id, personObject)
           .then((returnedPerson) => {
             setPersons(persons.map(person => person.id !== oldPerson.id ? person : returnedPerson))
+            setNotificationMessage(`"${personObject.name}'s" number succesfully changed to "${personObject.number}"`)
+            setTimeout(() => {
+              setNotificationMessage(null)
+            }, 5000)
           })
-      }
+          .catch((error) => {
+            setErrorMessage(
+              `Person "${personObject.name}" was already removed from server`
+            )
+            setTimeout(() => {
+              setErrorMessage(null)
+            }, 5000)
+            setPersons(persons.filter(person => person.id !== oldPerson.id))
+            
+          })
+        return
+      } 
     }
     
     personService
@@ -73,6 +91,10 @@ const App = () => {
         setPersons(persons.concat(returnedPerson))
         setNewName('')
         setNewNumber('')
+        setNotificationMessage(`Added "${personObject.name}" to phonebook`)
+        setTimeout(() => {
+          setNotificationMessage(null)
+        }, 5000)
       })
   }
 
@@ -82,6 +104,10 @@ const App = () => {
         .remove(id)
         .then(() => {
           setPersons(persons.filter(person => person.id !== id))
+          setNotificationMessage(`"${name}" removed from phonebook`)
+          setTimeout(() => {
+            setNotificationMessage(null)
+          }, 5000)
         })
     }
   }
@@ -108,16 +134,15 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter newFilter={newFilter} handleFilterChange={handleFilterChange} />
-
-      <h2>add a new</h2>
-      <PersonForm addPerson={addPerson} newName={newName} handleNameChange={handleNameChange} newNumber={newNumber} handleNumberChange={handleNumberChange} />
-
+        <Notification message={notificationMessage} />
+        <Error message={errorMessage} />
+        <Filter newFilter={newFilter} handleFilterChange={handleFilterChange} />
+      <h2>Add a new person or update number</h2>
+        <PersonForm addPerson={addPerson} newName={newName} handleNameChange={handleNameChange} newNumber={newNumber} handleNumberChange={handleNumberChange} />
       <h2>Numbers</h2>
-      <Persons personsToShow={personsToShow} deletePerson={deletePerson} />
+        <Persons personsToShow={personsToShow} deletePerson={deletePerson} />
     </div>
   )
-
 }
 
 export default App
