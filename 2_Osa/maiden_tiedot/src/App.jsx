@@ -22,7 +22,8 @@ const ListOfCountries = ( {countriesToShow, handleShowClickedCountry, handleFilt
             <button onClick={() => {
               handleShowClickedCountry(country) 
               handleFilterChange({ target: { value: country.name.common }})}}
-            >show</button>
+            >show
+            </button>
           </div>)}
       </div>
     )
@@ -54,11 +55,59 @@ const TheCountry = ({country}) => {
         {Object.values(country.languages).map(language => <li key={language}>{language}</li>)}
       </ul>
       <img src={country.flags.png} alt={country.name.common} />
+      <Weather country={country} />
     </div>
   )
 }
 
+const Weather = ({country}) => {
+  const [weather, setWeather] = useState(null)
 
+  useEffect(() => {
+    axios
+      //.get(`https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::simple&place=rovaniemi&parameters=temperature,windspeedms`)  
+      .get(`https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::simple&place=${country.capital}&parameters=temperature,windspeedms`)
+      .then(response => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(response.data, "application/xml");
+        console.log(response.data)
+  
+        let temperature = "N/A";
+        let windspeed = "N/A";
+  
+        const elements = xmlDoc.getElementsByTagName("BsWfs:BsWfsElement");
+        
+        for (let element of elements) {
+          const paramName = element.getElementsByTagName("BsWfs:ParameterName")[0]?.textContent;
+          const paramValue = element.getElementsByTagName("BsWfs:ParameterValue")[0]?.textContent;
+          
+          if (paramName === "temperature") {
+            //console.log('HEREEEEEEE', paramValue, 'C')
+            temperature = paramValue;
+          } else if (paramName === "windspeedms") {
+            //console.log('HEREEEEEEE2', paramValue, 'ms')
+            windspeed = paramValue;
+          }
+        }
+  
+        setWeather({ temperature, windspeed });
+      })
+      .catch((error) => {
+        console.error("Error fetching weather:", error);
+        setWeather({ temperature: "N/A", windspeed: "N/A" });
+      });
+  }, [country]);
+
+  if (!weather) return <p>Loading weather...</p>;
+      
+  return (
+    <div>
+      <h2>Weather in {country.capital}:</h2>
+      <p>Temperature: {weather.temperature} Celcius</p>
+      <p>Wind: {weather.windspeed} m/s</p>
+    </div>
+  )
+}
 const App = () => {
   const [newFilter, setNewFilter] = useState('')
   const [countries, setCountries] = useState([])
@@ -68,7 +117,7 @@ const App = () => {
     axios
       .get('https://studies.cs.helsinki.fi/restcountries/api/all')
       .then(response => {
-        console.log(response.data)
+        //console.log(response.data)
         setCountries(response.data)
       })
   }, [])
