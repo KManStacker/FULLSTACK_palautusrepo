@@ -1,0 +1,13 @@
+{
+  "name": "fullstack_palautusrepo",
+  "version": "1.0.0",
+  "description": "FullStack-kurssin tehtävien palautusrepo, osat omissa kansioissaan\r  Render-osoite: https://fullstack-palautusrepo.onrender.com/",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pushii": "git add . && git commit -m \"general root-push\" && git push"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
