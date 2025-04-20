@@ -102,7 +102,7 @@ const App = () => {
         )
         setTimeout(() => {
           setErrorMessage(null)
-        }, 5000)
+        }, 9000)
       })
   }
 
