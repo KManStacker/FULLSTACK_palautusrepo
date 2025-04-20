@@ -10,7 +10,7 @@ if (!url) {
   process.exit(1)
 }
 
-console.log('connecting to MongoDB . . .') 
+console.log('connecting to MongoDB . . .')
 
 mongoose.connect(url)
   .then(result => {
@@ -26,7 +26,7 @@ const personSchema = new mongoose.Schema({
     minLength: 3,
     required: true
   },
-  number: { 
+  number: {
     type: String,
     minLength: 8,
     validate: {
