@@ -7,7 +7,7 @@
     "dev": "node --watch index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:ui": "rm -rf dist && cd ../../2_Osa/puhelinluettelo && npm run build && cp -r dist ../../3_Osa/puhelinluettelo3_backend",
-    "deploy:full": "npm run build:ui && cd ../.. && git add . && git commit -m allbuild && git push"
+    "deploy:full": "npm run build:ui && git add . && git commit -m allbuild && git push"
   },
   "author": "I",
   "license": "ISC",
@@ -19,3 +19,4 @@
     "morgan": "^1.10.0"
   }
 }
+ 
