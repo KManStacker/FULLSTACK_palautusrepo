@@ -6,6 +6,8 @@
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
     "test": "cross-env  NODE_ENV=test node --test",
+    "test:frontend": "cross-env NODE_ENV=test node --test tests/list_helper.test.js",
+    "test:backend": "cross-env NODE_ENV=test node --test tests/blog_api.test.js",
     "lint": "eslint ."
   },
   "author": "",
@@ -19,6 +21,7 @@
     "mongoose": "^8.14.0"
   },
   "devDependencies": {
-    "eslint": "^9.25.1"
+    "eslint": "^9.25.1",
+    "supertest": "^7.1.0"
   }
 }
