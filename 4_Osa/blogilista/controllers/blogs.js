@@ -37,40 +37,36 @@ blogsRouter.post('/', (request, response, next) => {
         .catch(error => next(error))
 })
 
-blogsRouter.delete('/:id', (request, response, next) => {
-    Blog.findByIdAndDelete(request.params.id)
-        .then(() => {
-            response.status(204).end()
-        })
-        .catch(error => next(error))
+blogsRouter.delete('/:id', async (request, response, next) => {
+    //try {
+      await Blog.findByIdAndDelete(request.params.id)
+      response.status(204).end()
+    //} catch (error) {
+    //  next(error)
+    //}
 })
 
-blogsRouter.put('/:id', (request, response, next) => {
+blogsRouter.put('/:id', async (request, response, next) => {
   const body = request.body
 
-  Blog.findById(request.params.id)
-    .then(blog => {
-      if (!blog) {
-        return response.status(404).end()
-      }
-      if (body.title !== undefined) {
-        blog.title = body.title
-      }
-      if (body.author !== undefined) {
-        blog.author = body.author
-      }
-      if (body.url !== undefined) {
-        blog.url = body.url
-      }
-      if (body.likes !== undefined) {
-        blog.likes = body.likes
-      }
-      return blog.save()
-    })
-    .then(savedBlog => {
-      response.json(savedBlog)
-    })
-    .catch(error => next(error))
+  const newBlog = await Blog.findById(request.params.id)
+    if (!newBlog) {
+      return response.status(404).json({ error: 'blog not found' })
+    }
+    if (body.hasOwnProperty('title')) {
+      newBlog.title = body.title
+    }
+    if (body.hasOwnProperty('author')) {
+      newBlog.author = body.author
+    }
+    if (body.hasOwnProperty('url')) {
+      newBlog.url = body.url
+    }
+    if (body.hasOwnProperty('likes')) {
+      newBlog.likes = body.likes
+    }
+    await newBlog.save()
+    response.json(newBlog)
 })
 
 module.exports = blogsRouter

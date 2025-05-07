@@ -104,7 +104,10 @@ describe('Blog API tests', () => {
     assert.ok(response.body[0].id)
     assert. strictEqual(response.body[0]._id, undefined)
   })
+})
 
+describe('blog addition', () => {
+  
   test('can add blogs with post', async () => {
     const newBlog = {
       title: 'New blog added with post',
@@ -173,6 +176,50 @@ describe('Blog API tests', () => {
       .expect(400)
   })
 })
+
+describe('blog deletion', () => {
+  test('deleting a blog', async () => {
+    const beforeBlogs = await api
+        .get('/api/blogs/')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    const blogToDelete = beforeBlogs.body[0]
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .expect(204)
+    const afterBlogs = await api
+        .get('/api/blogs/')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    assert.strictEqual(afterBlogs.body.length, beforeBlogs.body.length - 1)
+  })
+})
+
+describe('blog update', () => {
+  test('updating a blog', async () => {
+    const beforeBlogs = await api
+        .get('/api/blogs/')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    const blogToUpdate = beforeBlogs.body[0]
+    const likesBeforeUpdate = blogToUpdate.likes
+    const newLikes = { likes: likesBeforeUpdate + 9 }
+
+    await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(newLikes)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    const afterBlogs = await api
+      .get('/api/blogs/')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    const updatedBlog = afterBlogs.body[0]
+    const likesAfterUpdate = updatedBlog.likes
+    assert.strictEqual(likesAfterUpdate, likesBeforeUpdate + 9)
+  })
+})
+
 
 after(async () => {
   await mongoose.connection.close()
