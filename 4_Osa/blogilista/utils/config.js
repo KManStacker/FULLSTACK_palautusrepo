@@ -12,4 +12,9 @@ if (!MONGODB_URI) {
     console.error('MONGODB_URI not defined in .env')
 }
 
+const SECRET = process.env.SECRET
+if (!SECRET) {
+    console.error('SECRET not defined in .env')
+}
+
 module.exports = { PORT, MONGODB_URI }

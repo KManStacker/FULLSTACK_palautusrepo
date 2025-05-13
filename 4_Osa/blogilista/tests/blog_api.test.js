@@ -1,9 +1,12 @@
+// tests/blog_api.test.js
 const { test, after, beforeEach, describe } = require('node:test')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const assert = require('node:assert')
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const bcrypt = require('bcrypt')
 
 const api = supertest(app)
 
@@ -73,15 +76,48 @@ const originalBlogs = [
   }  
 ]
 
+let testToken = null
+let testUser = null
+
 // @@@@@ tests @@@@@
 
 beforeEach(async () => {
   await Blog.deleteMany({})
+  await User.deleteMany({})
+
+  const passwordHash = await bcrypt.hash('salasana', 10)
+  const user = new User({ username: 'testi_apuri', name: 'Testi Apuri', passwordHash })
+  const loginInfo = { username: 'testi_apuri', password: 'salasana' }
+  // console.log('--- beforeEach (blog_api.test.js): Attempting login with:', loginInfo)
+
+  testUser = (await user.save())._id.toString()
+  const loginResponse = await api
+    .post('/api/login')
+    .send(loginInfo)
+
+  // console.log('--- beforeEach (blog_api.test.js): Login response status:', loginResponse.status);
+  // console.log('--- beforeEach (blog_api.test.js): Login response body keys:', loginResponse.body ? Object.keys(loginResponse.body) : 'body is undefined/null');
+  
+  if (loginResponse.status === 200 && loginResponse.body && loginResponse.body.token) {
+    testToken = loginResponse.body.token;
+    // console.log('--- beforeEach (blog_api.test.js): Token obtained successfully.');
+  } else {
+    // console.error('!!!!!!!! BEFORE_EACH (blog_api.test.js): LOGIN FAILED OR TOKEN NOT RECEIVED !!!!!!!!');
+    // console.error('Login status:', loginResponse.status);
+    // console.error('Login body:', JSON.stringify(loginResponse.body, null, 2));
+    testToken = null; 
+  }
+
+  testToken = loginResponse.body.token
+  //testToken = (await api
+    //.post('/api/login')
+    //.send(loginInfo))
+    //.body.token
+
   await Blog.insertMany(originalBlogs)
 })
 
 describe('Blog API tests', () => {
-
   test('blogs are returned as json', async () => {
   await api
     .get('/api/blogs')
@@ -107,8 +143,7 @@ describe('Blog API tests', () => {
 })
 
 describe('blog addition', () => {
-  
-  test('can add blogs with post', async () => {
+  test('can add blogs with post when authenticated', async () => {
     const newBlog = {
       title: 'New blog added with post',
       author: 'Horatio Hornsby',
@@ -117,6 +152,7 @@ describe('blog addition', () => {
     }
     const beforePost = await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${testToken}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -138,6 +174,7 @@ describe('blog addition', () => {
     }
     const beforePost = await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${testToken}`)
       .send(newBlogNoLikes)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -152,6 +189,7 @@ describe('blog addition', () => {
     }
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${testToken}`)
       .send(newBlogNoTitleOrUrl)
       .expect(400)
     
@@ -162,6 +200,7 @@ describe('blog addition', () => {
     }
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${testToken}`)
       .send(newBlogNoTitle)
       .expect(400)
     
@@ -172,26 +211,60 @@ describe('blog addition', () => {
     }
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${testToken}`)
       .send(newBlogNoUrl)
       .expect(400)
+  })
+
+  test('fails with 401 Unauthorized if token is not provided', async () => {
+    const newBlog = {
+      title: 'No token sad',
+      author: 'No Token Sadder',
+      url: 'www.horatio.com',
+      likes: 7
+    }
+  
+    const result = await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+      .expect('Content-Type', /application\/json/)
+
+    assert(result.body.error.includes('token missing or invalid'))
+
+    const newBlogs = await api.get('/api/blogs')
+    assert.strictEqual(newBlogs.body.length, originalBlogs.length)
   })
 })
 
 describe('blog deletion', () => {
   test('deleting a blog', async () => {
-    const beforeBlogs = await api
-        .get('/api/blogs/')
-      .expect(200)
+    const newBlog = {
+      title: 'this will be deleted',
+      author: 'Deletio Dellie',
+      url: 'https://delldell.del/',
+      likes: 11
+    }
+    const createdBlog = await api
+      .post('/api/blogs')
+      .set('Authorization', `Bearer ${testToken}`)
+      .send(newBlog)
+      .expect(201)
       .expect('Content-Type', /application\/json/)
-    const blogToDelete = beforeBlogs.body[0]
+
+    const beforeBlogs = await Blog.find({})
+
+    
     await api
-      .delete(`/api/blogs/${blogToDelete.id}`)
+      .delete(`/api/blogs/${createdBlog.body.id}`)
+      .set('Authorization', `Bearer ${testToken}`)
       .expect(204)
-    const afterBlogs = await api
-        .get('/api/blogs/')
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
-    assert.strictEqual(afterBlogs.body.length, beforeBlogs.body.length - 1)
+
+    const afterBlogsLength = (await Blog.find({})).length
+    assert.strictEqual(afterBlogsLength, beforeBlogs.length - 1)
+
+    const deletedBlogIsNull = await Blog.findById(createdBlog.body.id)
+    assert.strictEqual(deletedBlogIsNull, null)
   })
 })
 
